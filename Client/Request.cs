@@ -10,8 +10,8 @@ namespace Client
     class Request
     {
         /* Request class creates and handles requests
-         to the Taki server. Each request has a 'code' field, an 'args'
-         field, and potentialy a 'jwt' field.
+         to the Taki server. Each request has a 'code' field, and an 'args'
+         field.
          */
 
         [JsonProperty(PropertyName = "code")]
@@ -19,9 +19,6 @@ namespace Client
 
         [JsonProperty(PropertyName = "args")]
         public Dictionary<string, dynamic> arguments; // value can be any type
-
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)] // Optional field - ignore if empty
-        public string jwt;
 
         public Request(string code)
         {
@@ -32,6 +29,16 @@ namespace Client
         public string Serialize()
         {
             return JsonConvert.SerializeObject(this, Formatting.Indented);
+        }
+
+        public override string ToString()
+        {
+            string args = "";
+            foreach (KeyValuePair<string, dynamic> kvp in this.arguments)
+            {
+                args += kvp.Key + " : " + kvp.Value + " ,";
+            }
+            return "{" + "'code' : '" + this.code + "', " + "'args' : " + "{" + args + "}";
         }
     }
 }

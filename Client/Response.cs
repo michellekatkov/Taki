@@ -10,7 +10,8 @@ namespace Client
     class Response
     {
         /* Response class creates and handles responses
-         from the Taki server 
+         from the Taki server. Each response has a 'code'/'status'
+         field and an 'args' field.
          */
 
         [JsonProperty(PropertyName = "code")]
@@ -25,6 +26,16 @@ namespace Client
         public Response()
         {
 
+        }
+
+        public override string ToString()
+        {
+            string args = "";
+            foreach (KeyValuePair<string, dynamic> kvp in this.arguments)
+            {
+                args += kvp.Key + " : " + kvp.Value + " ,";
+            }
+            return "{" + "'code' : '"+ this.code +"', " + "'args' : " + "{" + args + "}";
         }
     }
 }

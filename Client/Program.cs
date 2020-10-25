@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 
 namespace Client
@@ -14,45 +15,37 @@ namespace Client
     {
         static void Main(string[] args)
         {
-            ClientSocket client = new ClientSocket("10.0.0.14", 50000);
+            ClientSocket client = new ClientSocket("10.0.0.7", 50000);
             client.ConnectSocket();
 
+
+            //Thread recv = new Thread(client.ReceiveResponses);
+            //recv.Start();
             string msg = "";
 
             List<Dictionary<string, string>> myCards = new List<Dictionary<string, string>>();
 
-            while (msg != "exit")
+            while (true)
             {
                 msg = Console.ReadLine(); // wait for user input
 
-                string code = "take_cards"; // request has code 'place_cards'
-                string jwt = "Random json-web-token";
+                if (msg == "exit")
+                {
+                    break;
+                }
+                string code = "create_game"; // request has code 'place_cards'
                 Request request = new Request(code);
-                request.jwt = jwt;
+                request.arguments.Add("lobby_name", "itay the king");
+                request.arguments.Add("player_name", "itay");
+                request.arguments.Add("password", "1234");
 
                 client.SendRequest(request);
+                Console.ReadLine();
                 Response response = client.ReceiveResponse();
-
-                Console.WriteLine(response.code);
-
-                List<Dictionary<string, string>> cardsList = response.arguments["cards"].ToObject(typeof(List<Dictionary<string, string>>)); // convert to .NET object
-                foreach(Dictionary<string,string> card in cardsList)
-                {
-                    myCards.Add(card);
-                }
-
-
-                foreach(Dictionary<string,string> card in myCards)
-                {
-                    foreach (KeyValuePair<string,string> kvp in card)
-                    {
-                        Console.WriteLine("{0}: {1}", kvp.Key, kvp.Value);
-                    }
-                    Console.WriteLine();
-                }
-
-                msg = "exit";
+                //Console.WriteLine(response);
+                break;
             }
+            Console.WriteLine();
             client.Disconnect();
             Console.ReadLine();
         }
