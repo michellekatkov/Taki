@@ -35,7 +35,7 @@ namespace Client
             {
                 args += kvp.Key + " : " + kvp.Value + " ,";
             }
-            return "{" + "'code' : '"+ this.code +"', " + "'args' : " + "{" + args + "}";
+            return "{" + "'code' : '"+ this.code +"', " + "'args' : " + "{ " + args + " }";
         }
     }
 }

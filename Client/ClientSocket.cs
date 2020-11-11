@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace Client
 {
@@ -15,11 +16,13 @@ namespace Client
         private const int BufferSize = 1024;
         private byte[] buffer = new byte[BufferSize];
 
-        private List<Response> responses = new List<Response>(); // List of responses during the game to handle.
+        private List<Response> responsesToHandle = new List<Response>(); // List of responses during the game to handle.
+        private object locker = new object();
         private string ip;
         private int port, bytesSent, bytesReceived;
         private bool isClientConnected;
         private Socket sender;
+
 
         public ClientSocket(string ip, int port)
         {
@@ -27,6 +30,7 @@ namespace Client
             this.port = port;
             this.isClientConnected = false;
         }
+
 
         public void ConnectSocket()
         {
@@ -44,6 +48,7 @@ namespace Client
             
         }
 
+
         public void Disconnect()
         {
             if (!this.isClientConnected) return;
@@ -60,26 +65,56 @@ namespace Client
             
         }
 
-        public void SendRequest(Request message)
+
+        public void HandleGame()
         {
-            this.bytesSent = this.sender.Send(Encoding.ASCII.GetBytes(message.Serialize()));
+            /* This function starts 2 functions as threads.
+             * One function is responsible for receiving messages from the server
+             * Second function is handling the responses
+             */ 
+            Thread clientReceiver = new Thread(this.ReceiveGameResponses);
+            Thread clientHandler = new Thread(this.ResponsesHandler);
+            clientReceiver.Start();
+            clientHandler.Start();
         }
 
 
-        public void HandleGameResponses()
+        public void ReceiveGameResponses()
         {
             // This function receives messages from the server during
-            // the game, and acts according to the message.
-            // *Should be ran on a different thread
+            // the game, and adds it to the list of responses to handle
             string message_json;
             while (true)
             {
                 this.bytesReceived = sender.Receive(this.buffer);
                 message_json = Encoding.ASCII.GetString(this.buffer, 0, this.bytesReceived);
                 AppendResponses(message_json);
-                // TODO: Handle each request
             }
             
+        }
+
+
+        public void ResponsesHandler()
+        {
+            int numOfResponsesLeft;
+            while (true)
+            {
+                if (this.responsesToHandle.Count > 0) // There are messages to handle
+                {
+                    numOfResponsesLeft = this.responsesToHandle.Count;
+                    lock (locker)
+                    {
+                        while (numOfResponsesLeft > 0)
+                        {
+                            Response response = this.responsesToHandle[0]; // Get first response
+                            Console.WriteLine("Handling response: " + response.ToString());
+                            // TODO: Handle response
+                            this.responsesToHandle.Remove(response);
+                            numOfResponsesLeft--;
+                        }
+                    }
+                }
+            }
         }
 
         private void AppendResponses(string message_json)
@@ -100,8 +135,10 @@ namespace Client
                     {
                         s.Pop();
                         totalMessage += c;
-                        Console.WriteLine(totalMessage);
-                        this.responses.Add(DeserializeResponse(totalMessage));
+                        lock (locker)
+                        {
+                            this.responsesToHandle.Add(DeserializeResponse(totalMessage));
+                        }
                         totalMessage = ""; // reset message incase of another
                         continue;
                     }
@@ -110,14 +147,22 @@ namespace Client
             }
         }
 
+
+        public void SendRequest(Request message)
+        {
+            this.bytesSent = this.sender.Send(Encoding.ASCII.GetBytes(message.Serialize()));
+        }
+
+
         public Response ReceiveResponse()
         {
-            // Receives a single json string from server and returns the Response object
-            // Used in the pre-game phase
+            // Receives a single json string from server and returns the Response object.
+            // Used in the pre-game phase.
             this.bytesReceived = sender.Receive(this.buffer);
             string message_json = Encoding.ASCII.GetString(this.buffer, 0, this.bytesReceived);
             return DeserializeResponse(message_json);
         }
+
 
         public Response DeserializeResponse(string message_json)
         {
@@ -125,14 +170,5 @@ namespace Client
             Response message = JsonConvert.DeserializeObject<Response>(message_json);
             return message;
         }
-
-        public void PrintResponses()
-        {
-            foreach (Response response in this.responses)
-            {
-                Console.WriteLine(response.ToString());
-            }
-        }
-
     }
 }
