@@ -3,9 +3,19 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <StartupObject>TestingPlayingAlgorithm.Program</StartupObject>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Security.Permissions" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Taki-task-networking\Taki-task-networking\Client\Client.csproj" />
     <ProjectReference Include="..\..\PlayingAlgorithm\PlayingAlgorithm\PlayingAlgorithm.csproj" />
   </ItemGroup>
 
