@@ -58,9 +58,9 @@ namespace PlayingAlgorithm
         public JObject ToJSON()
         {
             JObject json = new JObject(
+                new JProperty("type", type.ToString()),
                 new JProperty("color", color.ToString() ),
-                new JProperty("type", type.ToString() ),
-                new JProperty("value", face )
+                new JProperty("value", (face<0)?"":face.ToString() )
                 );
             return json;
         }

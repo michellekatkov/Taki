@@ -29,6 +29,8 @@ namespace PlayingAlgorithm
             canPlay = new TakiCardCollection();
             simulator = null;
             serverPlayers = new Dictionary<string, int>();
+            colorRestriction = new TakiCardRestriction_Color();
+            faceRestriction = new TakiCardRestriction_Face();
         }
         private static float alphaWeight = 0.5F;
         public void DrawOneCard(TakiCard card)
@@ -87,7 +89,7 @@ namespace PlayingAlgorithm
                     //Console.WriteLine("\\________________/");
                 }
             }
-            Console.WriteLine("     --  - Can play: -----  ");
+            Console.WriteLine("     ----- Can play: -----  ");
             Console.WriteLine(  canPlay.ToString() );
             if( currentPlayerState == PlayerState.specificMove)
             {
@@ -100,6 +102,7 @@ namespace PlayingAlgorithm
                 {
                     if( simulator != null)
                     {
+                        specificCardsPlayed++;
                         return simulator.AdditionalSpecificMove();
                     }
                 }else
@@ -273,35 +276,77 @@ namespace PlayingAlgorithm
         {
             Console.WriteLine(response);
             Console.WriteLine(response.arguments);
+            TakiCardCollection hand = null;
             // here we get message from server
             switch (response.code)
             {
+                case "move_done":
+                    
+                        int numTakenCards = 0;
+                        hand = new TakiCardCollection();
+                        int playerIdx = serverPlayers[response.arguments["player_name"]];
+                        if (response.arguments["type"] == "cards_taken" )
+                        {
+                            numTakenCards = response.arguments["amount"];
+                            simulator.handCards[playerIdx] += numTakenCards;
+                            // put constraint here
+
+                        } else
+                        {
+                            if (response.arguments["cards"] is JArray)
+                            {
+                                JArray arr = response.arguments["cards"];
+                                TakiCard card = null;
+                                foreach (JToken v in arr)
+                                {
+                                    //Console.WriteLine(v);
+                                    card = TakiCard.FromJSON(v);
+                                    hand.AddCard(card);
+                                }
+                                simulator.game.leadingCard = card;
+                                simulator.game.actionColor = card.color;
+                                simulator.game.takiAction = false;
+                                simulator.handCards[playerIdx] -= hand.numCards;
+                            }
+                        }
+                    
+                    break;
                 case "update_turn":
                     currentPlayer = response.arguments["current_player"];
                     if (currentPlayer == myName)
                     {
                         // here we should really play
-                        TakiMove move= simulator.SimulateNextMove();                        
-                        Request req = new Request("place_cards");
-                        req.arguments.Add("jwt", token);
-                        // send card to server here
+                        TakiMove move= simulator.SimulateNextMove();
                         if (move == null)
                         {
-                            // no move                            
-                            req.arguments.Add("cards", new JArray() );
-                        } else
-                        {                       
-                            JArray cards = new JArray();                            
-                            for (TakiMove m1 = move; m1.additionalMove==null; m1=m1.additionalMove)
-                            {
-                                cards.Add(m1.card.ToJSON());
-                            }
-                            req.arguments.Add("cards", new JArray( cards ));
+                            Request req = new Request("take_cards");
+                            req.arguments.Add("jwt", token);
+                            sock.SendRequest(req);
                         }
+                        else
+                        {
+                            Request req = new Request("place_cards");
+                            req.arguments.Add("jwt", token);
+                            // send card to server here
+
+                            JArray cards = new JArray();
+                            for (TakiMove m1 = move; m1 != null; m1 = m1.additionalMove)
+                            {
+                                if (m1.card != null) {
+                                    cards.Add(new TakiCard(m1.card.type,
+                                        m1.card.color.isAnyColor() ? m1.actionColor : m1.card.color,
+                                        m1.card.face)
+                                        .ToJSON());
+                                }
+                            }
+                            req.arguments.Add("cards", cards);
+                        
                         sock.SendRequest(req);
+                        }
                     }
                     break;
                 case "game_starting":
+                    hand = new TakiCardCollection();
                     foreach (KeyValuePair<string, dynamic> entry in response.arguments)
                     {
                         switch( entry.Key)
@@ -310,8 +355,8 @@ namespace PlayingAlgorithm
                                 Console.WriteLine(entry.Value);
                                 if(entry.Value is Newtonsoft.Json.Linq.JArray)
                                 {
-                                    Newtonsoft.Json.Linq.JArray arr = entry.Value;
-                                    foreach(Newtonsoft.Json.Linq.JToken v in arr)
+                                    JArray arr = entry.Value;
+                                    foreach(JToken v in arr)
                                     {
                                         Console.WriteLine( v );
                                         TakiCard card = TakiCard.FromJSON( v );
@@ -343,7 +388,7 @@ namespace PlayingAlgorithm
                     simulator = new TakiSimulation(serverPlayers.Count);
                     simulator.game.players[0].hand.CopyCardsFrom(hand);
                     simulator.game.drawPile.RemoveCardsIn(hand);
-
+                    simulator.game.actionColor = TakiColor.any;
                     simulator.game.leadingCard = null;
 
                     // leading card ??

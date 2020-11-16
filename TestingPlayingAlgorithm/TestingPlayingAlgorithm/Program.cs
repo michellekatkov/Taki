@@ -136,7 +136,7 @@ namespace TestingPlayingAlgorithm
         {
             Team team = new Team();
             //ClientSocket client1 = new ClientSocket("104.156.225.184", 8080);
-            ClientSocket client1 = new ClientSocket("127.0.0.1", 50000);
+            ClientSocket client1 = new ClientSocket("127.0.0.1", 49999);
             client1.ConnectSocket();
             client1.SendRequest(CreateGameRequest("itay the king", "itay", "1234"));
             Response response = client1.ReceiveResponse();
@@ -147,7 +147,7 @@ namespace TestingPlayingAlgorithm
 
             for (int k = 1; k < 4; k++)
             {
-                ClientSocket client2 = new ClientSocket("127.0.0.1", 50000);
+                ClientSocket client2 = new ClientSocket("127.0.0.1", 49999);
                 //ClientSocket client2 = new ClientSocket("104.156.225.184", 8080);
                 client2.ConnectSocket();
                 team.names[k] = "michelle_" + k.ToString();

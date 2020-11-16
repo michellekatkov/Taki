@@ -1,13 +1,10 @@
 ﻿namespace PlayingAlgorithm
 {
-    public class TakiCardRestriction_Face : TakiCardRestriction
-    {
-        TakiFace face;
+    public class TakiCardRestriction_Face 
+    {       
         public  int[] maxCards;
-        public TakiCardRestriction_Face(TakiFace face, int minValue, int maxValue) :
-            base(minValue, maxValue)
-        {
-            this.face = face;
+        public TakiCardRestriction_Face()            
+        {            
             maxCards = new int[11];
             for (int i = 1; i < 10; i++)
             {

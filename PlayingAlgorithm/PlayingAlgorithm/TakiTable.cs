@@ -9,11 +9,11 @@ namespace PlayingAlgorithm
         public TakiCardCollection drawPile{ get; private set; }
         public TakiCard leadingCard;
         public TakiColor actionColor; //{ get; private set; }
-        public bool takiAction { get; private set; }
+        public bool takiAction; //{ get; private set; }
         public bool stopAction = false;
         public bool plus2Action { get; private set; }
         bool direction = true; // forward
-        int plus2amount=0; // should be in construction and in the beggining of game
+        public int plus2amount=0; // should be in construction and in the beggining of game
         public Player[] players;
         int numPlayers, addedPlayers;
         public TakiSimulation simulation;
@@ -123,6 +123,7 @@ namespace PlayingAlgorithm
         }
         public bool PlayTurn()
         {
+            bool takiRoolback= false;
             TakiMove move;
             TakiCard card;
             //plus2Action = false;
@@ -138,11 +139,16 @@ namespace PlayingAlgorithm
                         stopAction = false;                 
                         break;
                     }
-                    Console.WriteLine("player             " + i +"  cards ("+ players[i].hand.numCards + ")");
-                    Console.WriteLine("                                  ta: "+ takiAction + 
-                        "  p2: "+ plus2amount+"  ac: "+actionColor );
 
-                    Console.WriteLine(players[i].hand.ToString());
+                    //Console.WriteLine("player             " + i +"  cards ("+ players[i].hand.numCards + ")");
+                    //Console.WriteLine("                                  ta: "+ takiAction + 
+                        //"  p2: "+ plus2amount+"  ac: "+actionColor );
+
+                    //Console.WriteLine(players[i].hand.ToString());
+                    if(players[i].hand.numCards == 0)
+                    {
+                        return false;
+                    }
                     move = players[i].PlayCard(this);
                     Console.WriteLine("                   "+i+"  playing "+move);
                     //plus2Action = false;
@@ -156,24 +162,24 @@ namespace PlayingAlgorithm
                         {
                             plus2amount--;                           
                             players[i].DrawOneCard(DrawOneCard());
-                            if( simulation!= null)
+                            /*if( simulation!= null)
                             {
                                 simulation.handCards[i]++;
-                            }
+                            }*/
                         }
                         players[i].DrawOneCard(DrawOneCard());
-                        if (simulation != null)
+                        /*if (simulation != null)
                         {
                             simulation.handCards[i]++;
-                        }
+                        }*/
                     }
                     else
                     {
-                        card = move.card;
                         // check if should stop takiAction 
                         if (takiAction)
                         {//cards that finish taki action: stop, plus2, changeColor, changeDirection
                             // can be later optimized
+                            /*
                             if (card.SameType( TakiCardType.stop ) ||
                                 card.SameType( TakiCardType.plus2) ||
                                 card.SameType(TakiCardType.changeColor) ||
@@ -181,27 +187,50 @@ namespace PlayingAlgorithm
                             {
                                 takiAction = false;
                             }
-                            else if (move.stopTaki)
+                            else */
+                            if (move.stopTaki)
                             {
                                 takiAction = false;
                             }
                         }
+
+                        /*
+                         * we can have:
+                         * first move: leading card == null
+                         * taki rollback: leading card != null, but card == null 
+                         * normal move: leading card != null, but card != null 
+                         */
+
+                        card = move.card;
                         if (leadingCard != null)
                         {
-                            drawPile.PutAtRandom(leadingCard);
+                            if (card != null)
+                            {  // normal move
+                                drawPile.PutAtRandom(leadingCard);
+                                leadingCard = card;
+                                int idx = players[i].hand.FindCard(card);
+                                players[i].hand.RemoveCard(idx);
+                            }
+                            else
+                            { // Taki rollback
+                                card = leadingCard;
+                                if(actionColor!=null)
+                                    move.actionColor = actionColor;
+                                if( card.SameType( TakiCardType.taki ) ||
+                                    card.SameType(TakiCardType.taki))
+                                {
+                                    takiRoolback = true;
+                                }
+                            }
                         }
-                        leadingCard = card;
-                        //discardPile.AddCard(move);
-                        int idx = players[i].hand.FindCard(card);
-                        players[i].hand.RemoveCard(idx );
-                        if (simulation != null)
-                        {
-                            simulation.handCards[i]--;
-                        }
-
+                        else
+                        { // first move in a game
+                            leadingCard = card;
+                            int idx = players[i].hand.FindCard(card);
+                            players[i].hand.RemoveCard(idx);
+                        }                  
                         if (! takiAction )
-                        {
-                             
+                        {                             
                             switch ( card.type.type )
                             {
                                 case TakiCardType.plus_type:
@@ -216,10 +245,25 @@ namespace PlayingAlgorithm
                                     stopAction = true;
                                     break;
                                 case TakiCardType.superTaki_type:
-   
                                     actionColor = move.actionColor;
+                                    if (takiRoolback)
+                                    {
+                                        takiAction = false;
+                                        break;
+                                    }
                                     takiAction = !move.stopTaki;
+                                    takiRoolback = false;
                                     continue;
+                                case TakiCardType.taki_type:
+                                    actionColor = card.color;
+                                    if (takiRoolback)
+                                    {
+                                        takiAction = false;
+                                        break;
+                                    }
+                                    takiAction = !move.stopTaki;
+                                    takiRoolback = false;
+                                    continue;                                   
                                 case TakiCardType.changeColor_type:
                                     actionColor = move.actionColor;
                                     break;
@@ -227,11 +271,7 @@ namespace PlayingAlgorithm
                                     actionColor = card.color;
                                     direction = !direction;
                                     break;
-                                case TakiCardType.taki_type:
-                                    actionColor = card.color;
-                                    takiAction = !move.stopTaki;
-                                    continue;
-                                default:
+                                 default:
                                     actionColor = card.color;
                                     break;
                             }

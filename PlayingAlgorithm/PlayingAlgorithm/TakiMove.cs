@@ -5,9 +5,7 @@
         public TakiColor actionColor;
         public bool stopTaki;
         public double moveCost;
-        public TakiMove additionalMove;
-        
-
+        public TakiMove additionalMove;        
         public TakiMove(TakiCard card = null, TakiColor color = null, bool stopTaki = true)
         {
             this.card = card;
@@ -15,6 +13,28 @@
             this.stopTaki = stopTaki;
             this.additionalMove = null;
             moveCost = 0.0;
+        }
+        public TakiMove Last()
+        {
+            if( additionalMove == null)
+            {
+                return this;
+            }
+            return additionalMove.Last();
+        }
+        public TakiMove Clone()
+        {
+            TakiMove move = new TakiMove(card, actionColor, stopTaki);
+            if(additionalMove != null)
+            {
+                move.additionalMove = additionalMove.Clone();                
+            }
+            return move;
+        }
+        public TakiMove AddMove(TakiMove move)
+        {
+            Last().additionalMove = move;
+            return this;
         }
         public override string ToString()
         {
