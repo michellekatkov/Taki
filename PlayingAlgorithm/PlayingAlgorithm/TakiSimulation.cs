@@ -69,9 +69,38 @@ namespace PlayingAlgorithm
         }
         List<TakiMove> canPlay;
 
+        private bool secondTaki=false;
+
         public void CheckAdditionalMove(TakiCardCollection hand, TakiMove curMove, TakiMove rootMove)
         {
             // this is taki action active
+            TakiCardCollection canPlayTaki = new TakiCardCollection();
+            TakiCardCollection playSelectedTaki = new TakiCardCollection();
+            for (int cardIndex = 0; cardIndex < hand.numCards; cardIndex++)
+            {               
+                if (moveTable.CanPlay(hand.cards[cardIndex]))
+                {
+                    TakiCard c = hand.cards[cardIndex];
+                    canPlayTaki.AddCard(c);             
+                }
+            }
+            long confToPlay=1;
+            for (int i = 0; i < canPlayTaki.numCards; i++)
+            {
+                confToPlay *= 2;
+            }
+            for (long conf = 0; conf < confToPlay; conf++)
+            {
+                long nCards=0;
+                for (long k = conf; k >0; k>>=1)
+                {
+                    nCards += k % 2;
+                }
+                for (int last = 0; last < nCards; last++)
+                {
+                    long k = 0;
+                }
+            }
             TableState state = TableState.Store(moveTable);
             TakiCardCollection tmp = new TakiCardCollection();
             tmp.CopyCardsFrom(hand);
@@ -80,15 +109,15 @@ namespace PlayingAlgorithm
                 state.Restore(moveTable);
                 hand.CopyCardsFrom(tmp);
                 TakiCard card = hand.cards[k];
-                Console.WriteLine("     ==taki==>: "+card+ "     | "
+               /* Console.WriteLine("     ==taki==>: "+card+ "     | "
                     +moveTable.leadingCard + " | "
-                    +moveTable.actionColor);
+                    +moveTable.actionColor);*/
                 if (moveTable.CanPlay(card))
                 {
                     int idx = hand.FindCard(card);
                     hand.RemoveCard(idx);
                     TakiMove move = rootMove.Clone().AddMove(new TakiMove(card, null, false));
-                    Console.WriteLine("                     ==taki next ==> \n"+ move);
+                    //Console.WriteLine("                     ==taki next ==> \n"+ move);
                     CheckAdditionalMove(hand, null , move);
                 }                 
             }
@@ -111,7 +140,19 @@ namespace PlayingAlgorithm
                 else if (nextMove1.card.SameType(TakiCardType.taki) ||
                   nextMove1.card.SameType(TakiCardType.superTaki))
                 {
-                    CheckAdditionalMove(hand, null, move1);
+                    if (secondTaki)
+                    {
+                        nextMove1.AddMove(new TakiMove(null, null, true));
+                        Console.WriteLine("              + <- \n" + move1);
+                        canPlay.Add(move1);
+                        secondTaki = false;
+                    }
+                    else
+                    {
+                        secondTaki = true;
+                        CheckAdditionalMove(hand, null, move1);
+                    }
+                    
                 }
                 else
                 {
@@ -133,7 +174,7 @@ namespace PlayingAlgorithm
                 state.Restore(moveTable);
                 hand.CopyCardsFrom(tmp);
                 TakiCard card = hand.cards[i];
-                Console.WriteLine("    == ++ ==>: "+card.ToString());
+                //Console.WriteLine("    == ++ ==>: "+card.ToString());
                 if (moveTable.CanPlay(card))
                 {
                     noMove = false;
@@ -338,7 +379,7 @@ namespace PlayingAlgorithm
                 {
                     if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
                         Console.WriteLine("herna ----------------------------");
-                    Console.WriteLine("simulating "+ canPlay[mvInd]);
+                   // Console.WriteLine("simulating "+ canPlay[mvInd]);
                     double cost= SimulateMove(canPlay[mvInd]);
                     if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
                         Console.WriteLine("herna ----------------------------");
@@ -351,7 +392,7 @@ namespace PlayingAlgorithm
                     }
                 }
             }
-            Console.WriteLine("hand same as debugCollection? "+hand.IsExactlySameCollection(Player.debugCollection));
+            //Console.WriteLine("hand same as debugCollection? "+hand.IsExactlySameCollection(Player.debugCollection));
             if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
                 Console.WriteLine("herna ----------------------------"); ;
 

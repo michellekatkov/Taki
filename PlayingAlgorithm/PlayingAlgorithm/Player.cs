@@ -279,6 +279,25 @@ namespace PlayingAlgorithm
             Console.WriteLine(response.arguments);
             TakiCardCollection hand = null;
             // here we get message from server
+            if (response.status != null)
+            {
+                if (response.status == "success")
+                {
+                    if (response.arguments.ContainsKey("cards"))
+                    {
+                        JArray cards = response.arguments["cards"];
+
+                        foreach (JToken c in cards)
+                        {
+                            //add card to already saved deck
+                            TakiCard card = TakiCard.FromJSON(c);
+                            simulator.game.players[0].hand.AddCard(card);
+                            int cardIndex = simulator.game.drawPile.FindCard(card);
+                            simulator.game.drawPile.RemoveCard(cardIndex);
+                        }
+                    }
+                }
+            }
             switch (response.code)
             {
                 case "move_done":
@@ -290,7 +309,7 @@ namespace PlayingAlgorithm
                     int playerIdx = serverPlayers[response.arguments["player_name"]];
                     if (response.arguments["type"] == "cards_taken")
                     {
-                        numTakenCards = response.arguments["amount"];
+                        numTakenCards = ( int )response.arguments["amount"];
                         simulator.handCards[playerIdx] += numTakenCards;
                         // put constraint here
 
@@ -307,6 +326,14 @@ namespace PlayingAlgorithm
                                 card = TakiCard.FromJSON(v);
                                 hand.AddCard(card);
                             }
+                            if (card.SameType(TakiCardType.plus2))
+                            {
+                                simulator.game.plus2amount += 2;
+                            }
+                            else
+                            {
+                                simulator.game.plus2amount = 0;
+                            }
                             simulator.game.actionColor = card.color;
                             simulator.game.takiAction = false;
                             simulator.handCards[playerIdx] -= hand.numCards;
@@ -321,7 +348,7 @@ namespace PlayingAlgorithm
                         }
                     }
                     if(!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
-                        Console.WriteLine("herna ----------------------------"); ;
+                        Console.WriteLine("herna ----------------------------"); 
                     break;
                 case "update_turn":
                     currentPlayer = response.arguments["current_player"];
@@ -354,6 +381,9 @@ namespace PlayingAlgorithm
                                         m1.card.color.isAnyColor() ? m1.actionColor : m1.card.color,
                                         m1.card.face)
                                         .ToJSON());
+
+                                    int idx = simulator.game.players[0].hand.FindCard(m1.card);
+                                    simulator.game.players[0].hand.RemoveCard(idx);
                                 }
                             }
 
