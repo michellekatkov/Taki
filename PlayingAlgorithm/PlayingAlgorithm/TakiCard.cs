@@ -7,7 +7,7 @@ namespace PlayingAlgorithm
     {
         public TakiCardType type { get; private set; }
         public int face { get; private set; }
-        public TakiColor color { get; private set; }
+        public TakiColor color;//{ get; private set; }
         public TakiCard( TakiCardType _type, TakiColor _color= null, int _face= -1)
         {
             this.type = _type;
@@ -28,7 +28,7 @@ namespace PlayingAlgorithm
                 {
                     
                     Newtonsoft.Json.Linq.JProperty p = (Newtonsoft.Json.Linq.JProperty)v;
-                    Console.WriteLine(p.Name+" "+p.Value);
+                    //Console.WriteLine(p.Name+" "+p.Value);
                     switch( p.Name)
                     {
                         case "color":
@@ -57,10 +57,20 @@ namespace PlayingAlgorithm
         }
         public JObject ToJSON()
         {
-            JObject json = new JObject(
+            JObject json;
+            if (face < 0)
+            {
+                json = new JObject(
+                new JProperty("type", type.ToString()),
+                new JProperty("color", color.ToString()),
+                new JProperty("value", "")
+                );
+                return json;
+            }
+            json = new JObject(
                 new JProperty("type", type.ToString()),
                 new JProperty("color", color.ToString() ),
-                new JProperty("value", (face<0)?"":face.ToString() )
+                new JProperty("value", face )
                 );
             return json;
         }

@@ -1,4 +1,6 @@
-﻿namespace PlayingAlgorithm
+﻿using System;
+
+namespace PlayingAlgorithm
 {
     public class TakiCardCollection
     {
@@ -44,6 +46,19 @@
                 }
             }
         }
+        public bool IsExactlySameCollection(TakiCardCollection collection)
+        {
+            if (collection.numCards != this.numCards)
+            {
+                return false;
+            }
+            for (int i = 0; i < collection.numCards; i++)
+            {
+                if (!collection.cards[i].SameCard(cards[i]))
+                    return false;
+            }
+            return true;
+        }
         public void CopyCardsFrom(TakiCardCollection _cards)
         {
             if (cardsSize <= _cards.numCards)
@@ -69,6 +84,8 @@
             int ind = MyRandom.randomUniform(numCards);
             AddCard(cards[ind]);
             cards[ind] = card;
+            if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+                Console.WriteLine("herna ----------------------------");
         }
         public void RemoveCard(int cardIndex)
             // I do believe (for speed) that index is within cards

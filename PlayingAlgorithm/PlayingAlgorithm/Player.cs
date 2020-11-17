@@ -22,6 +22,7 @@ namespace PlayingAlgorithm
         public TakiCardCollection hand;
         public TakiCardRestriction_Color colorRestriction;
         public TakiCardRestriction_Face faceRestriction;
+        public static TakiCardCollection debugCollection=new TakiCardCollection();
         public Player()
         {
             hand = new TakiCardCollection();
@@ -89,8 +90,8 @@ namespace PlayingAlgorithm
                     //Console.WriteLine("\\________________/");
                 }
             }
-            Console.WriteLine("     ----- Can play: -----  ");
-            Console.WriteLine(  canPlay.ToString() );
+            //Console.WriteLine("     ----- Can play: -----  ");
+            //Console.WriteLine(  canPlay.ToString() );
             if( currentPlayerState == PlayerState.specificMove)
             {
                 // delegate all responsibility to simulator
@@ -281,42 +282,54 @@ namespace PlayingAlgorithm
             switch (response.code)
             {
                 case "move_done":
+                    if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+                        Console.WriteLine("herna ----------------------------"); ;
                     
-                        int numTakenCards = 0;
-                        hand = new TakiCardCollection();
-                        int playerIdx = serverPlayers[response.arguments["player_name"]];
-                        if (response.arguments["type"] == "cards_taken" )
-                        {
-                            numTakenCards = response.arguments["amount"];
-                            simulator.handCards[playerIdx] += numTakenCards;
-                            // put constraint here
+                    int numTakenCards = 0;
+                    hand = new TakiCardCollection();
+                    int playerIdx = serverPlayers[response.arguments["player_name"]];
+                    if (response.arguments["type"] == "cards_taken")
+                    {
+                        numTakenCards = response.arguments["amount"];
+                        simulator.handCards[playerIdx] += numTakenCards;
+                        // put constraint here
 
-                        } else
+                    }
+                    else
+                    {
+                        if (response.arguments["cards"] is JArray)
                         {
-                            if (response.arguments["cards"] is JArray)
+                            JArray arr = response.arguments["cards"];
+                            TakiCard card = null;
+                            foreach (JToken v in arr)
                             {
-                                JArray arr = response.arguments["cards"];
-                                TakiCard card = null;
-                                foreach (JToken v in arr)
-                                {
-                                    //Console.WriteLine(v);
-                                    card = TakiCard.FromJSON(v);
-                                    hand.AddCard(card);
-                                }
-                                simulator.game.leadingCard = card;
-                                simulator.game.actionColor = card.color;
-                                simulator.game.takiAction = false;
-                                simulator.handCards[playerIdx] -= hand.numCards;
+                                //Console.WriteLine(v);
+                                card = TakiCard.FromJSON(v);
+                                hand.AddCard(card);
                             }
+                            simulator.game.actionColor = card.color;
+                            simulator.game.takiAction = false;
+                            simulator.handCards[playerIdx] -= hand.numCards;
+                            int ci = simulator.game.drawPile.FindCard(card);
+                            if (ci < 0)
+                            {
+                                // means color= any
+                                card.color = TakiColor.any;
+                                ci = simulator.game.drawPile.FindCard(card);
+                            }
+                            simulator.game.leadingCard = card;
                         }
-                    
+                    }
+                    if(!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+                        Console.WriteLine("herna ----------------------------"); ;
                     break;
                 case "update_turn":
                     currentPlayer = response.arguments["current_player"];
                     if (currentPlayer == myName)
                     {
                         // here we should really play
-                        TakiMove move= simulator.SimulateNextMove();
+                        TakiMove move = new TakiMove();
+                        move= simulator.SimulateNextMove();
                         if (move == null)
                         {
                             Request req = new Request("take_cards");
@@ -330,8 +343,12 @@ namespace PlayingAlgorithm
                             // send card to server here
 
                             JArray cards = new JArray();
+                            if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+                                Console.WriteLine("herna ----------------------------"); ;
+                            
                             for (TakiMove m1 = move; m1 != null; m1 = m1.additionalMove)
                             {
+                                
                                 if (m1.card != null) {
                                     cards.Add(new TakiCard(m1.card.type,
                                         m1.card.color.isAnyColor() ? m1.actionColor : m1.card.color,
@@ -339,10 +356,14 @@ namespace PlayingAlgorithm
                                         .ToJSON());
                                 }
                             }
+
                             req.arguments.Add("cards", cards);
-                        
+                        Console.WriteLine("player "+currentPlayer+" sending request: "+req.ToString());
                         sock.SendRequest(req);
                         }
+                        if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+                            Console.WriteLine("herna ----------------------------"); ;
+
                     }
                     break;
                 case "game_starting":

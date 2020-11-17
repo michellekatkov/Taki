@@ -37,6 +37,7 @@ namespace PlayingAlgorithm
          * play one turn of the game return if game is finished
          */
         public static readonly TakiCardCollection takiDeck = GenerateTakiDeck();
+        public static readonly TakiCardCollection takiDeck2 = GenerateTakiDeck();
         public static TakiCardCollection GenerateTakiDeck()
         {
             //change to real num
@@ -93,13 +94,14 @@ namespace PlayingAlgorithm
         {
             discardPile.CopyCardsFrom(table.discardPile);
             drawPile.CopyCardsFrom(table.drawPile);
+            if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+                Console.WriteLine("herna ----------------------------");
             if (table.leadingCard != null)
-            {
-                if( leadingCard ==null)
-                {
-                    leadingCard = new TakiCard(TakiCardType.numberCard);
-                }
-                leadingCard.CopyCardFrom(table.leadingCard);
+            {               
+                leadingCard = new TakiCard(TakiCardType.numberCard);                
+                //leadingCard.CopyCardFrom(table.leadingCard);
+                if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+                    Console.WriteLine("herna ----------------------------");
             } else
             {
                 leadingCard = null;
@@ -150,7 +152,7 @@ namespace PlayingAlgorithm
                         return false;
                     }
                     move = players[i].PlayCard(this);
-                    Console.WriteLine("                   "+i+"  playing "+move);
+                    //Console.WriteLine("                   "+i+"  playing "+move);
                     //plus2Action = false;
                     if (move == null)
                     {
@@ -348,6 +350,10 @@ def valid_move(card, last_card= Card(None, '', ''), first= False, in_taki= False
         public bool CanPlay(TakiCard card, bool plus2Action= false)
         {
             //Console.WriteLine("  . ");
+            if( actionColor == null)
+            {
+                actionColor = TakiColor.any;
+            }
             if (leadingCard != null)
             {
                 //Console.WriteLine("          -- " + leadingCard.ToString());
@@ -370,7 +376,7 @@ def valid_move(card, last_card= Card(None, '', ''), first= False, in_taki= False
                     //card.color == other.color,
                     case TakiCardType.plus_type:
                             
-                        return leadingCard.SameType(card)|| card.SameColor(actionColor);
+                        return leadingCard.SameType(card)|| card.SameColor(leadingCard.color);
 
                     /*
                         CardType.PLUS_2: lambda card, other, in_taki: False,
@@ -418,7 +424,7 @@ def valid_move(card, last_card= Card(None, '', ''), first= False, in_taki= False
                         case TakiCardType.changeColor_type:
                         case TakiCardType.taki_type:
                             return card.SameType(leadingCard) ||
-                                    card.SameColor(actionColor) ||
+                                    card.SameColor(leadingCard.color) ||
                                     card.SameType(TakiCardType.superTaki) ||
                                     card.SameType(TakiCardType.changeColor);
                         /*
