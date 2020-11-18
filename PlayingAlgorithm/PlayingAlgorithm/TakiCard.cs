@@ -22,12 +22,12 @@ namespace PlayingAlgorithm
             TakiColor color= TakiColor.any;
             TakiCardType type= TakiCardType.numberCard;
             int value= -1;
-            foreach (Newtonsoft.Json.Linq.JToken v in token)
+            foreach (JToken v in token)
             {
-                if( v is Newtonsoft.Json.Linq.JProperty)
+                if( v is JProperty)
                 {
                     
-                    Newtonsoft.Json.Linq.JProperty p = (Newtonsoft.Json.Linq.JProperty)v;
+                    JProperty p = (JProperty)v;
                     //Console.WriteLine(p.Name+" "+p.Value);
                     switch( p.Name)
                     {

@@ -14,6 +14,26 @@
             this.additionalMove = null;
             moveCost = 0.0;
         }
+        public TakiMove GetNth( int n)
+        {
+            if (n == 1)
+            {
+                return this;
+            }
+            if (additionalMove != null)
+            {
+                return additionalMove.GetNth(n - 1);
+            }
+            return null;
+        }
+        public int Count()
+        {
+            if(additionalMove == null)
+            {
+                return 1;
+            }
+            return 1 + additionalMove.Count();
+        }
         public TakiMove Last()
         {
             if( additionalMove == null)

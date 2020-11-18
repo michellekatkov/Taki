@@ -280,7 +280,10 @@ namespace PlayingAlgorithm
                         }
                         else
                         {
-                            actionColor = card.color;
+                            if( card.color != null)
+                            {
+                                actionColor = card.color;
+                            }
                         }
                     }
                     if (! takiAction  )
@@ -376,7 +379,7 @@ def valid_move(card, last_card= Card(None, '', ''), first= False, in_taki= False
                     //card.color == other.color,
                     case TakiCardType.plus_type:
                             
-                        return leadingCard.SameType(card)|| card.SameColor(leadingCard.color);
+                        return leadingCard.SameType(card)|| card.color.myColor == leadingCard.color.myColor;
 
                     /*
                         CardType.PLUS_2: lambda card, other, in_taki: False,
@@ -424,7 +427,7 @@ def valid_move(card, last_card= Card(None, '', ''), first= False, in_taki= False
                         case TakiCardType.changeColor_type:
                         case TakiCardType.taki_type:
                             return card.SameType(leadingCard) ||
-                                    card.SameColor(leadingCard.color) ||
+                                    card.color.myColor==leadingCard.color.myColor ||
                                     card.SameType(TakiCardType.superTaki) ||
                                     card.SameType(TakiCardType.changeColor);
                         /*

@@ -71,11 +71,12 @@ namespace PlayingAlgorithm
 
         private bool secondTaki=false;
 
-        public void CheckAdditionalMove(TakiCardCollection hand, TakiMove curMove, TakiMove rootMove)
+        public void CheckAdditionalTakiMove(TakiCardCollection hand, TakiMove rootMove)
         {
             // this is taki action active
             TakiCardCollection canPlayTaki = new TakiCardCollection();
             TakiCardCollection playSelectedTaki = new TakiCardCollection();
+            int takiMoves = rootMove.Count();
             for (int cardIndex = 0; cardIndex < hand.numCards; cardIndex++)
             {               
                 if (moveTable.CanPlay(hand.cards[cardIndex]))
@@ -84,6 +85,7 @@ namespace PlayingAlgorithm
                     canPlayTaki.AddCard(c);             
                 }
             }
+            Console.WriteLine( "          taki can play \n"+canPlayTaki );
             long confToPlay=1;
             for (int i = 0; i < canPlayTaki.numCards; i++)
             {
@@ -96,70 +98,110 @@ namespace PlayingAlgorithm
                 {
                     nCards += k % 2;
                 }
-                for (int last = 0; last < nCards; last++)
+                for (long last = 0; last < nCards; last++)
                 {
-                    long k = 0;
-                }
-            }
-            TableState state = TableState.Store(moveTable);
-            TakiCardCollection tmp = new TakiCardCollection();
-            tmp.CopyCardsFrom(hand);
-            for (int k = 0; k < tmp.numCards; k++)
-            {
-                state.Restore(moveTable);
-                hand.CopyCardsFrom(tmp);
-                TakiCard card = hand.cards[k];
-               /* Console.WriteLine("     ==taki==>: "+card+ "     | "
-                    +moveTable.leadingCard + " | "
-                    +moveTable.actionColor);*/
-                if (moveTable.CanPlay(card))
-                {
-                    int idx = hand.FindCard(card);
-                    hand.RemoveCard(idx);
-                    TakiMove move = rootMove.Clone().AddMove(new TakiMove(card, null, false));
-                    //Console.WriteLine("                     ==taki next ==> \n"+ move);
-                    CheckAdditionalMove(hand, null , move);
-                }                 
-            }
-            TakiMove move1 = rootMove.Clone();
-            TakiMove nextMove1 = move1.Last();
-            moveTable.takiAction = false;
-            if (move1 == nextMove1 )
-            {
-                // this is only taki and nothing else
-                nextMove1.AddMove(new TakiMove(null, null, true));
-                Console.WriteLine("              + <- \n" + move1);
-                canPlay.Add(move1);
-            } else 
-            {
-                nextMove1.stopTaki = true;
-                if (nextMove1.card.SameType(TakiCardType.plus))
-                {
-                    CheckIfCanPlayPlus(hand, move1);
-                }
-                else if (nextMove1.card.SameType(TakiCardType.taki) ||
-                  nextMove1.card.SameType(TakiCardType.superTaki))
-                {
-                    if (secondTaki)
+                    TakiMove move = rootMove.Clone();
+                    long confIdx = 0;
+                    long cardIdx = 0;
+                    long lastIdx = 0;
+                    for (long confBit = conf; confBit > 0; confBit >>= 1)
                     {
-                        nextMove1.AddMove(new TakiMove(null, null, true));
-                        Console.WriteLine("              + <- \n" + move1);
-                        canPlay.Add(move1);
-                        secondTaki = false;
+                        if (confBit % 2 == 0)
+                        {
+                            cardIdx++;
+                            continue;
+                        }
+                        if (confIdx == last)
+                        {
+                            lastIdx = cardIdx;
+                        }
+                        else
+                        {
+                            move.AddMove(new TakiMove(canPlayTaki.cards[cardIdx],null,false));
+                        }
+                        cardIdx++;
+                        confIdx++;
+                    }                    
+                    if (inOptionalColorCollection(canPlayTaki.cards[lastIdx]))
+                    {
+                        TakiCardCollection hand2 = null;
+                        TakiCardCollection hand3 = null;
+                        for (int i2 = 0; i2 < 4; i2++)
+                        {
+                            TakiMove cmove = move.Clone().AddMove(
+                                new TakiMove(canPlayTaki.cards[lastIdx],
+                                TakiColor.colors[i2],
+                                true));
+                            if (canPlayTaki.cards[lastIdx].SameType(TakiCardType.superTaki))
+                            {
+                                // update hand and start again with different color
+                                //cmove.AddMove(new TakiMove(null, null, true));
+                                if( hand2==null)
+                                {
+                                    hand2 = new TakiCardCollection();
+                                    hand3 = new TakiCardCollection();
+                                    hand3.CopyCardsFrom(hand);
+                                    for (TakiMove mv = cmove.GetNth(takiMoves).additionalMove; mv != null; mv = mv.additionalMove)
+                                    {
+                                        if (mv.card != null)
+                                        {
+                                            int idx = hand3.FindCard(mv.card);
+                                            hand3.RemoveCard(idx);
+                                        }
+                                    }
+                                }
+                                hand2.CopyCardsFrom(hand3);
+                                TakiColor tableColor = moveTable.actionColor;
+                                TakiCard leadingCard = moveTable.leadingCard;
+                                moveTable.leadingCard = canPlayTaki.cards[lastIdx];
+                                moveTable.actionColor = TakiColor.colors[i2];
+                                CheckAdditionalTakiMove(hand2, cmove);
+                                moveTable.leadingCard = leadingCard;
+                                moveTable.actionColor = tableColor;
+                            }
+                            else
+                            {
+                                Console.WriteLine("              + <- \n" + move);
+                                canPlay.Add(cmove);
+                            }
+                        }
                     }
                     else
                     {
-                        secondTaki = true;
-                        CheckAdditionalMove(hand, null, move1);
+                        TakiMove cmove = move.AddMove(
+                            new TakiMove(canPlayTaki.cards[lastIdx], null, true));
+                        if (canPlayTaki.cards[lastIdx].SameType(TakiCardType.taki))
+                        {
+                            cmove.AddMove(new TakiMove(null, null, true));
+                            Console.WriteLine("              + <- \n" + move);
+                            canPlay.Add(move);
+
+                        }
+                        else if (canPlayTaki.cards[lastIdx].SameType(TakiCardType.plus))
+                        {
+                            // update hand and start new round if plus
+                            TakiCardCollection hand2 = new TakiCardCollection();
+                            hand2.CopyCardsFrom(hand);
+                            for (TakiMove mv = cmove.GetNth(takiMoves).additionalMove; mv != null; mv = mv.additionalMove)
+                            {
+                                if (mv.card != null)
+                                {
+                                    int idx = hand2.FindCard(mv.card);
+                                    hand2.RemoveCard(idx);
+                                }
+                            }
+                            CheckIfCanPlayPlus(hand2, cmove);
+                        }
+                        else
+                        {
+                            Console.WriteLine("              + <- \n" + move);
+                            canPlay.Add(move);
+                        }
                     }
-                    
-                }
-                else
-                {
-                    Console.WriteLine("              + <- \n" + move1);
-                    canPlay.Add(move1);
                 }
             }
+            rootMove.AddMove(new TakiMove(null, null, true));
+            canPlay.Add(rootMove);            
         }
 
         public void CheckIfCanPlayPlus( TakiCardCollection hand, TakiMove rootMove)
@@ -194,11 +236,12 @@ namespace PlayingAlgorithm
                                 int idx = hand.FindCard(card);
                                 hand.RemoveCard(idx);
                                 // root move can be not null
-                                CheckAdditionalMove(hand, move, move);
+                                CheckAdditionalTakiMove(hand, move);
                             }
                             else
                             {
-                                TakiMove move = rootMove.Clone().AddMove(new TakiMove(card, TakiColor.colors[k]));
+                                TakiMove move = rootMove.Clone().AddMove(
+                                    new TakiMove(card, TakiColor.colors[k]));
                                 Console.WriteLine("              + <- \n" + move);
                                 canPlay.Add(move);
                             }
@@ -214,7 +257,7 @@ namespace PlayingAlgorithm
                             moveTable.takiAction = true;
                             int idx = hand.FindCard(card);
                             hand.RemoveCard(idx);
-                            CheckAdditionalMove(hand, move, move);
+                            CheckAdditionalTakiMove(hand, move);
                         }
                         else if (card.type.SameType(TakiCardType.plus))
                         {
@@ -293,7 +336,7 @@ namespace PlayingAlgorithm
                             int idx = hand.FindCard(card);
                             hand.RemoveCard(idx);
                             // root move can be not null
-                            CheckAdditionalMove(hand, move, move);
+                            CheckAdditionalTakiMove(hand, move);
                         }
                         else
                         {
@@ -312,7 +355,7 @@ namespace PlayingAlgorithm
                         moveTable.takiAction = true;
                         int idx = hand.FindCard(card);
                         hand.RemoveCard(idx);
-                        CheckAdditionalMove(hand, move, move);
+                        CheckAdditionalTakiMove(hand, move);
                     }
                     else if (card.type.SameType(TakiCardType.plus))
                     {
@@ -361,8 +404,8 @@ namespace PlayingAlgorithm
             // we do it here once, but should do it several times (10000) each time shuffling drawPile and 
             // drawing cards to other palyers
             float[] moveCost = new float[numCardsIcanPlay];
-            if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
-                Console.WriteLine("herna ----------------------------");
+           // if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+           //     Console.WriteLine(" ----------------------------");
             for (int mvInd = 0; mvInd < numCardsIcanPlay; mvInd++)
             {
                 canPlay[mvInd].moveCost = 0.0;
@@ -372,17 +415,17 @@ namespace PlayingAlgorithm
        
             for (nIter = 0; nIter < 3; nIter++)
             {
-                if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
-                    Console.WriteLine("herna ----------------------------"); 
+                //if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+               //    Console.WriteLine(" ----------------------------"); 
                 Console.WriteLine("iteration "+ nIter);
                 for (int mvInd = 0; mvInd < canPlay.Count; mvInd++)
                 {
-                    if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
-                        Console.WriteLine("herna ----------------------------");
+                 //   if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+                 //       Console.WriteLine(" ----------------------------");
                    // Console.WriteLine("simulating "+ canPlay[mvInd]);
                     double cost= SimulateMove(canPlay[mvInd]);
-                    if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
-                        Console.WriteLine("herna ----------------------------");
+                   // if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+                   //     Console.WriteLine(" ----------------------------");
                     canPlay[mvInd].moveCost += cost;
                     // do not forget to update moveTable after each turn
                     // or copy it from game when rolling back
@@ -393,8 +436,8 @@ namespace PlayingAlgorithm
                 }
             }
             //Console.WriteLine("hand same as debugCollection? "+hand.IsExactlySameCollection(Player.debugCollection));
-            if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
-                Console.WriteLine("herna ----------------------------"); ;
+            //if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+           //     Console.WriteLine(" ----------------------------"); ;
 
             return canPlay[maxCostInd];
         }
@@ -430,8 +473,8 @@ namespace PlayingAlgorithm
         {
 
             moveTable.CopyTableFrom(game);
-            if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
-                Console.WriteLine("herna ----------------------------");
+            //if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+            //    Console.WriteLine(" ----------------------------");
             moveTable.simulation = this;
             moveTable.players[0].currentPlayerState = Player.PlayerState.specificMove;
             moveTable.players[0].simulator = this;
@@ -440,8 +483,8 @@ namespace PlayingAlgorithm
             // TODO: if specific move is taki or super_taki make correct stopTaki flag
             // draw cards to all players according to constraints they have
             moveTable.drawPile.Shuffle();
-            if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
-                Console.WriteLine("herna ----------------------------");
+           // if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+            //    Console.WriteLine(" ----------------------------");
             for (int k = 1; k < 4; k++)
             {
                 // TODO: implements constraints
@@ -510,7 +553,10 @@ namespace PlayingAlgorithm
                     p.DrawOneCard(card);
                 }
             }
-
+            if (!moveTable.players[0].hand.IsExactlySameCollection(game.players[0].hand))
+            {
+                Console.WriteLine("changed hand");
+            }
             if (moveTable.PlayTurn())
             {
                 moveTable.players[0].currentPlayerState = Player.PlayerState.randomMove;

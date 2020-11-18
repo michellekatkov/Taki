@@ -68,6 +68,10 @@ namespace PlayingAlgorithm
             bool canPlayPlus = false;
             bool canPlayPlus2 = false;
             bool canPlayTaki = false;
+            if(hand.cards[hand.numCards - 1] == null)
+            {
+                Console.WriteLine("something wrong");
+            }
             for (int cardIndex=0; cardIndex < hand.numCards; cardIndex++)
             {
                 if (table.CanPlay(hand.cards[cardIndex]))
@@ -275,8 +279,8 @@ namespace PlayingAlgorithm
         string currentPlayer, myName;
         public void ProcessServerMessage( Response response )
         {
-            Console.WriteLine(response);
-            Console.WriteLine(response.arguments);
+            //Console.WriteLine(response);
+            //Console.WriteLine(response.arguments);
             TakiCardCollection hand = null;
             // here we get message from server
             if (response.status != null)
@@ -300,10 +304,13 @@ namespace PlayingAlgorithm
             }
             switch (response.code)
             {
+                case "game_ended":
+                    Console.WriteLine("\n\n\n\n\n\nGame Ended "+response.arguments["scoreboard"]);
+                    break;
                 case "move_done":
-                    if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
-                        Console.WriteLine("herna ----------------------------"); ;
-                    
+                    //if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+                    //Console.WriteLine(" ----------------------------"); ;
+                    Console.WriteLine( "player "+myName+ " "+ simulator.game.players[0].hand.numCards);
                     int numTakenCards = 0;
                     hand = new TakiCardCollection();
                     int playerIdx = serverPlayers[response.arguments["player_name"]];
@@ -311,6 +318,11 @@ namespace PlayingAlgorithm
                     {
                         numTakenCards = ( int )response.arguments["amount"];
                         simulator.handCards[playerIdx] += numTakenCards;
+                        if (simulator.game.plus2amount > 0)
+                        {
+                            simulator.game.plus2amount = 0;
+                        }
+                        
                         // put constraint here
 
                     }
@@ -355,6 +367,10 @@ namespace PlayingAlgorithm
                     if (currentPlayer == myName)
                     {
                         // here we should really play
+                        foreach (KeyValuePair<string,int> entry in serverPlayers )
+                        {
+                            Console.WriteLine(myName+" handsCards " + entry.Key+" "+simulator.handCards[entry.Value]);
+                        }
                         TakiMove move = new TakiMove();
                         move= simulator.SimulateNextMove();
                         if (move == null)
@@ -370,9 +386,9 @@ namespace PlayingAlgorithm
                             // send card to server here
 
                             JArray cards = new JArray();
-                            if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
-                                Console.WriteLine("herna ----------------------------"); ;
-                            
+                            //if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+                            //    Console.WriteLine(" ----------------------------"); ;
+                            Console.WriteLine(" hand before move "+ simulator.game.players[0].hand);
                             for (TakiMove m1 = move; m1 != null; m1 = m1.additionalMove)
                             {
                                 
@@ -384,6 +400,7 @@ namespace PlayingAlgorithm
 
                                     int idx = simulator.game.players[0].hand.FindCard(m1.card);
                                     simulator.game.players[0].hand.RemoveCard(idx);
+                                    simulator.game.drawPile.PutAtRandom(m1.card);
                                 }
                             }
 
@@ -392,7 +409,7 @@ namespace PlayingAlgorithm
                         sock.SendRequest(req);
                         }
                         if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
-                            Console.WriteLine("herna ----------------------------"); ;
+                            Console.WriteLine("herna ----------------------------");
 
                     }
                     break;
@@ -403,13 +420,13 @@ namespace PlayingAlgorithm
                         switch( entry.Key)
                         {
                             case "cards":
-                                Console.WriteLine(entry.Value);
+                                //Console.WriteLine(entry.Value);
                                 if(entry.Value is Newtonsoft.Json.Linq.JArray)
                                 {
                                     JArray arr = entry.Value;
                                     foreach(JToken v in arr)
                                     {
-                                        Console.WriteLine( v );
+                                        //Console.WriteLine( v );
                                         TakiCard card = TakiCard.FromJSON( v );
                                         hand.AddCard(card);
                                     }
@@ -419,11 +436,11 @@ namespace PlayingAlgorithm
                                 //playerNames = Convert.ToString(entry.Value);
                                 if (entry.Value is Newtonsoft.Json.Linq.JArray)
                                 {
-                                    Newtonsoft.Json.Linq.JArray arr = entry.Value;
+                                    JArray arr = entry.Value;
                                     int k = 0;
-                                    foreach (Newtonsoft.Json.Linq.JToken v in arr)
+                                    foreach (JToken v in arr)
                                     {
-                                        Console.WriteLine(v);
+                                        //Console.WriteLine(v);
                                         serverPlayers[ v.ToString() ] = k;
                                         if (k == 0)
                                         {

@@ -30,5 +30,3 @@ C:\Users\Kot\Documents\School\Cyber\Taki\Taki\TestingPlayingAlgorithm\TestingPla
 C:\Users\Kot\Documents\School\Cyber\Taki\Taki\TestingPlayingAlgorithm\TestingPlayingAlgorithm\obj\Debug\netcoreapp2.1\TestingPlayingAlgorithm.dll
 C:\Users\Kot\Documents\School\Cyber\Taki\Taki\TestingPlayingAlgorithm\TestingPlayingAlgorithm\obj\Debug\netcoreapp2.1\TestingPlayingAlgorithm.pdb
 C:\Users\Kot\Documents\School\Cyber\Taki\Taki\TestingPlayingAlgorithm\TestingPlayingAlgorithm\obj\Debug\netcoreapp2.1\TestingPlayingAlgorithm.genruntimeconfig.cache
-M:\Documents\School\Cyber\Taki\Taki\TestingPlayingAlgorithm\TestingPlayingAlgorithm\obj\Debug\netcoreapp2.1\TestingPlayingAlgorithm.dll
-M:\Documents\School\Cyber\Taki\Taki\TestingPlayingAlgorithm\TestingPlayingAlgorithm\obj\Debug\netcoreapp2.1\TestingPlayingAlgorithm.pdb
