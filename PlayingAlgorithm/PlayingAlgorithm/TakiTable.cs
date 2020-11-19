@@ -11,7 +11,7 @@ namespace PlayingAlgorithm
         public TakiColor actionColor; //{ get; private set; }
         public bool takiAction; //{ get; private set; }
         public bool stopAction = false;
-        public bool plus2Action { get; private set; }
+        public bool plusAction { get; private set; }
         bool direction = true; // forward
         public int plus2amount=0; // should be in construction and in the beggining of game
         public Player[] players;
@@ -108,7 +108,7 @@ namespace PlayingAlgorithm
             }
             actionColor=table.actionColor;
             takiAction = table.takiAction;
-            plus2Action = table.plus2Action;
+            plusAction = table.plusAction;
             direction = table.direction;
             plus2amount = table.plus2amount;
             numPlayers = table.numPlayers;
@@ -152,6 +152,12 @@ namespace PlayingAlgorithm
                         return false;
                     }
                     move = players[i].PlayCard(this);
+
+                    if (plusAction)
+                    {
+                        plusAction = false;
+                    }
+
                     //Console.WriteLine("                   "+i+"  playing "+move);
                     //plus2Action = false;
                     if (move == null)
@@ -237,6 +243,7 @@ namespace PlayingAlgorithm
                             {
                                 case TakiCardType.plus_type:
                                     actionColor = card.color;
+                                    plusAction = true;
                                     continue;
                                 case TakiCardType.plus2_type:
                                     actionColor = card.color;
@@ -350,19 +357,14 @@ def valid_move(card, last_card= Card(None, '', ''), first= False, in_taki= False
 
     return REGULAR_STATE_MACHINE[last_card.type] (last_card, card, in_taki)
     */
-        public bool CanPlay(TakiCard card, bool plus2Action= false)
+        public bool CanPlay(TakiCard card, bool plusAction= false)
         {
             //Console.WriteLine("  . ");
             if( actionColor == null)
             {
                 actionColor = TakiColor.any;
             }
-            if (leadingCard != null)
-            {
-                //Console.WriteLine("          -- " + leadingCard.ToString());
-            } else {
-                //Console.WriteLine("          -- ");
-            }
+         
             //Console.WriteLine("checking     " + card.ToString());
             if( leadingCard == null)
             {
@@ -370,7 +372,7 @@ def valid_move(card, last_card= Card(None, '', ''), first= False, in_taki= False
                 // anything possible
                 return true;
             }
-            if (takiAction)
+            if (takiAction || plusAction)
             {
                 // regular machine
                 switch( leadingCard.type.type )

@@ -59,7 +59,8 @@ namespace TestingPlayingAlgorithm
             public void Run(object obj)
             {
                 player.RegisterServer(sock, token);
-                while (true)
+                player.gameEnded = false;
+                while (!player.gameEnded)
                 {
                     player.ProcessServerMessage(sock.ReceiveResponse());
                 }
@@ -147,11 +148,20 @@ namespace TestingPlayingAlgorithm
 
             for (int k = 1; k < 4; k++)
             {
-                ClientSocket client2 = new ClientSocket("127.0.0.1", 40000);
-                //ClientSocket client2 = new ClientSocket("104.156.225.184", 8080);
-                client2.ConnectSocket();
                 team.names[k] = "michelle_" + k.ToString();
-                client2.SendRequest(JoinGameRequest(game_id, team.names[k], "1234"));
+                ClientSocket client2;
+                if ( k==1 )
+                    // when connecting to server change k==1
+                    client2 = new ClientSocket("104.156.225.184", 8080);
+                else 
+                    client2 = new ClientSocket("127.0.0.1", 40000);
+                client2.ConnectSocket();
+                if (k == 1)
+                    // change to server game params
+                    client2.SendRequest(JoinGameRequest(game_id, team.names[k], "1234"));
+                else
+                    client2.SendRequest(JoinGameRequest(game_id, team.names[k], "1234"));
+
                 team.clients[k] = client2;
                 response = client2.ReceiveResponse();
                 team.ReadBroadcast(k);

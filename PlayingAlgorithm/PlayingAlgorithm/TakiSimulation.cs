@@ -6,7 +6,7 @@ namespace PlayingAlgorithm
     public class TakiSimulation
     {
         /* TakiSimulator assumes that players[0] is me */
-
+        public TakiMove lastMove;
         TakiCardCollection optionalColoredCards;
         public int[] handCards;
         public TakiTable game { get; private set; } // current table on server 
@@ -217,7 +217,7 @@ namespace PlayingAlgorithm
                 hand.CopyCardsFrom(tmp);
                 TakiCard card = hand.cards[i];
                 //Console.WriteLine("    == ++ ==>: "+card.ToString());
-                if (moveTable.CanPlay(card))
+                if (moveTable.CanPlay(card, true))
                 {
                     noMove = false;
                     if (inOptionalColorCollection(card))
@@ -380,6 +380,7 @@ namespace PlayingAlgorithm
             int numCardsIcanPlay = 0;
             Player.debugCollection.CopyCardsFrom(me.hand);
             canPlay.Clear();
+            invalivMoves.Clear();
             moveTable.CopyTableFrom(game);
             TakiCardCollection hand = new TakiCardCollection();
             hand.CopyCardsFrom(me.hand);
@@ -413,11 +414,11 @@ namespace PlayingAlgorithm
             int maxCostInd=0;
             int nIter;
        
-            for (nIter = 0; nIter < 3; nIter++)
+            for (nIter = 0; nIter < 200; nIter++)
             {
                 //if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
                //    Console.WriteLine(" ----------------------------"); 
-                Console.WriteLine("iteration "+ nIter);
+                //Console.WriteLine("iteration "+ nIter);
                 for (int mvInd = 0; mvInd < canPlay.Count; mvInd++)
                 {
                  //   if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
@@ -438,9 +439,45 @@ namespace PlayingAlgorithm
             //Console.WriteLine("hand same as debugCollection? "+hand.IsExactlySameCollection(Player.debugCollection));
             //if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
            //     Console.WriteLine(" ----------------------------"); ;
-
-            return canPlay[maxCostInd];
+           lastMove= canPlay[maxCostInd];
+            invalivMoves.Add(maxCostInd);
+           return lastMove;
         }
+        public TakiMove GetNextValidMove()
+        {
+            
+            int maxCostInd = 0;
+            bool haveValidMove = false;
+            for (int mvInd = 0; mvInd < canPlay.Count; mvInd++)
+            {
+                bool validIndex = true;
+                foreach( int ii  in invalivMoves)
+                {
+                    if( ii== mvInd)
+                    {
+                        validIndex = false;
+                        break;
+                    } 
+                }
+                haveValidMove |= validIndex;
+                if ( validIndex && canPlay[mvInd].moveCost >= canPlay[maxCostInd].moveCost)
+                {
+                    maxCostInd = mvInd;
+                }
+            }
+
+            if (haveValidMove)
+            {
+                lastMove = canPlay[maxCostInd];
+                invalivMoves.Add(maxCostInd);
+                return lastMove;
+            }
+            else
+            {
+                return null;
+            }
+        }
+        List<int> invalivMoves = new List<int>();
        /*
         public TakiCard playingTaki(TakiTable table)
         {
@@ -561,7 +598,7 @@ namespace PlayingAlgorithm
             {
                 moveTable.players[0].currentPlayerState = Player.PlayerState.randomMove;
 
-                int depth = 1; // should do stratified depth depending on move cost
+                int depth = 10; // should do stratified depth depending on move cost
                                // i.e. look deeper for moves that are good and shallow for not so good moves
                 for (int turn = 0; turn < depth; turn++)
                 {

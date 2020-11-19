@@ -8,6 +8,7 @@ namespace PlayingAlgorithm
 {
     public class Player
     {
+        public bool gameEnded;
         TakiCardCollection canPlay;
         //TakiCard takiActionLastCard;
         public enum PlayerState
@@ -74,7 +75,7 @@ namespace PlayingAlgorithm
             }
             for (int cardIndex=0; cardIndex < hand.numCards; cardIndex++)
             {
-                if (table.CanPlay(hand.cards[cardIndex]))
+                if (table.CanPlay(hand.cards[cardIndex], table.plusAction))
                 {
                     TakiCard c = hand.cards[cardIndex];
                     canPlay.AddCard( c );
@@ -300,12 +301,66 @@ namespace PlayingAlgorithm
                             simulator.game.drawPile.RemoveCard(cardIndex);
                         }
                     }
+                } else if(response.status == "bad_request")
+                {
+                    if (response.arguments["message"] == "Invalid move done.")
+                    {
+                        for (TakiMove m1 = simulator.lastMove; m1 != null; m1 = m1.additionalMove)
+                        {
+
+                            if (m1.card != null)
+                            {
+                                int idx = simulator.game.drawPile.FindCard(m1.card);
+                                simulator.game.drawPile.RemoveCard(idx);
+                                simulator.game.players[0].hand.AddCard(m1.card);
+                            }
+                        }
+                        TakiMove move = simulator.GetNextValidMove();
+                        if (move == null)
+                        {
+                            Request req = new Request("take_cards");
+                            req.arguments.Add("jwt", token);
+                            sock.SendRequest(req);
+                        }
+                        else
+                        {
+                            Request req = new Request("place_cards");
+                            req.arguments.Add("jwt", token);
+                            // send card to server here
+
+                            JArray cards = new JArray();
+                            //if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+                            //    Console.WriteLine(" ----------------------------"); ;
+                            Console.WriteLine(" hand before move " + simulator.game.players[0].hand);
+                            for (TakiMove m1 = move; m1 != null; m1 = m1.additionalMove)
+                            {
+
+                                if (m1.card != null)
+                                {
+                                    cards.Add(new TakiCard(m1.card.type,
+                                        m1.card.color.isAnyColor() ? m1.actionColor : m1.card.color,
+                                        m1.card.face)
+                                        .ToJSON());
+
+                                    int idx = simulator.game.players[0].hand.FindCard(m1.card);
+                                    simulator.game.players[0].hand.RemoveCard(idx);
+                                    simulator.game.drawPile.PutAtRandom(m1.card);
+                                }
+                            }
+
+                            req.arguments.Add("cards", cards);
+                            Console.WriteLine("player " + currentPlayer + " sending request: " + req.ToString());
+                            sock.SendRequest(req);
+                        }
+
+                    }
                 }
             }
             switch (response.code)
             {
                 case "game_ended":
                     Console.WriteLine("\n\n\n\n\n\nGame Ended "+response.arguments["scoreboard"]);
+                    gameEnded = true;
                     break;
                 case "move_done":
                     //if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
@@ -316,14 +371,29 @@ namespace PlayingAlgorithm
                     int playerIdx = serverPlayers[response.arguments["player_name"]];
                     if (response.arguments["type"] == "cards_taken")
                     {
-                        numTakenCards = ( int )response.arguments["amount"];
+                        numTakenCards = ( int )response.arguments["amount"]; 
+                        // put constraint here
+                        if(numTakenCards == 1)
+                        {
+                            // restrictions based on leading card and action color
+                            if(simulator.game.leadingCard.SameType(TakiCardType.numberCard))
+                            {
+                                // no numbers 
+                                simulator.game.players[playerIdx].faceRestriction.
+                                    maxCards[simulator.game.leadingCard.face]= 0;
+                            }
+                            simulator.game.players[playerIdx].colorRestriction.
+                               maxCards[(int)simulator.game.actionColor.myColor] = 0;
+                        }
                         simulator.handCards[playerIdx] += numTakenCards;
+                        simulator.game.players[playerIdx].colorRestriction.AddCards(numTakenCards);
+                        simulator.game.players[playerIdx].faceRestriction.AddCards(numTakenCards);
                         if (simulator.game.plus2amount > 0)
                         {
                             simulator.game.plus2amount = 0;
                         }
                         
-                        // put constraint here
+                       
 
                     }
                     else
@@ -359,8 +429,8 @@ namespace PlayingAlgorithm
                             simulator.game.leadingCard = card;
                         }
                     }
-                    if(!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
-                        Console.WriteLine("herna ----------------------------"); 
+                    //if(!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+                        //Console.WriteLine(" ----------------------------"); 
                     break;
                 case "update_turn":
                     currentPlayer = response.arguments["current_player"];
@@ -371,7 +441,7 @@ namespace PlayingAlgorithm
                         {
                             Console.WriteLine(myName+" handsCards " + entry.Key+" "+simulator.handCards[entry.Value]);
                         }
-                        TakiMove move = new TakiMove();
+                        TakiMove move = null;
                         move= simulator.SimulateNextMove();
                         if (move == null)
                         {
@@ -408,8 +478,8 @@ namespace PlayingAlgorithm
                         Console.WriteLine("player "+currentPlayer+" sending request: "+req.ToString());
                         sock.SendRequest(req);
                         }
-                        if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
-                            Console.WriteLine("herna ----------------------------");
+                        //if (!TakiTable.takiDeck.IsExactlySameCollection(TakiTable.takiDeck2))
+                         //   Console.WriteLine(" ----------------------------");
 
                     }
                     break;

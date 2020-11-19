@@ -12,6 +12,13 @@
                 maxCards[i] = 100;
             }
         }
+        public void AddCards( int num)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                maxCards[i] += num;
+            }
+        }
     }
 }
 
