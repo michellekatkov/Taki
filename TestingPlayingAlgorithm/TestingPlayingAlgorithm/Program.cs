@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace TestingPlayingAlgorithm
 {
-    public class Team
+    public partial class Team
     {
         public ClientSocket[] clients;
         public string[] tokens;
@@ -39,31 +39,6 @@ namespace TestingPlayingAlgorithm
             for (int i = 0; i < 4; i++)
             {
                 clients[i].Disconnect();
-            }
-        }
-
-        public class PlayerThread
-        {
-            public Player player;
-            public ClientSocket sock;
-            public string token;
-            public Thread thread;
-
-            public void SetParams(Player player, ClientSocket sock, string token)
-            {
-                this.player = player;
-                this.sock = sock;
-                this.token = token;
-            }
-
-            public void Run(object obj)
-            {
-                player.RegisterServer(sock, token);
-                player.gameEnded = false;
-                while (!player.gameEnded)
-                {
-                    player.ProcessServerMessage(sock.ReceiveResponse());
-                }
             }
         }
 
@@ -150,8 +125,8 @@ namespace TestingPlayingAlgorithm
             {
                 team.names[k] = "michelle_" + k.ToString();
                 ClientSocket client2;
-                if ( k==1 )
-                    // when connecting to server change k==1
+                if ( k==1000 )
+                    // when connecting to server change to k==1
                     client2 = new ClientSocket("104.156.225.184", 8080);
                 else 
                     client2 = new ClientSocket("127.0.0.1", 40000);

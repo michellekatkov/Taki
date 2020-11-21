@@ -3,11 +3,16 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
-
 namespace PlayingAlgorithm
 {
+    public interface CardMessage
+    {
+        void CardPlayed(bool taken,JArray cards,int numCards, string playerName);
+    }
+
     public class Player
     {
+        public CardMessage graphicTable=null;
         public bool gameEnded;
         TakiCardCollection canPlay;
         //TakiCard takiActionLastCard;
@@ -371,7 +376,8 @@ namespace PlayingAlgorithm
                     int playerIdx = serverPlayers[response.arguments["player_name"]];
                     if (response.arguments["type"] == "cards_taken")
                     {
-                        numTakenCards = ( int )response.arguments["amount"]; 
+                        numTakenCards = ( int )response.arguments["amount"];
+                        graphicTable.CardPlayed(true, null, numTakenCards, response.arguments["player_name"]);
                         // put constraint here
                         if(numTakenCards == 1)
                         {
@@ -391,10 +397,7 @@ namespace PlayingAlgorithm
                         if (simulator.game.plus2amount > 0)
                         {
                             simulator.game.plus2amount = 0;
-                        }
-                        
-                       
-
+                        }                      
                     }
                     else
                     {
@@ -406,8 +409,9 @@ namespace PlayingAlgorithm
                             {
                                 //Console.WriteLine(v);
                                 card = TakiCard.FromJSON(v);
-                                hand.AddCard(card);
+                                hand.AddCard(card);                  
                             }
+                            graphicTable.CardPlayed(false, arr, arr.Count, response.arguments["player_name"]);
                             if (card.SameType(TakiCardType.plus2))
                             {
                                 simulator.game.plus2amount += 2;
